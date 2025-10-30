@@ -43,26 +43,26 @@ return new class extends Migration
             $table->foreign('sale_rejected_by')->references('id')->on('users');
             
             // Kolom untuk tracking device MQTT
-            $table->string('device_id')->nullable()->index()->after('nomor_rangka_5digit');
+            $table->string('device_id')->nullable()->index();
             
             // Kolom untuk tracking emisi real-time
-            $table->float('current_co2e_mg_m3')->nullable()->after('device_id');
-            $table->float('total_emissions_kg')->default(0)->after('current_co2e_mg_m3');
-            $table->float('daily_emissions_kg')->default(0)->after('total_emissions_kg');
-            $table->float('monthly_emissions_kg')->default(0)->after('daily_emissions_kg');
+            $table->float('current_co2e_mg_m3')->nullable();
+            $table->float('total_emissions_kg')->default(0);
+            $table->float('daily_emissions_kg')->default(0);
+            $table->float('monthly_emissions_kg')->default(0);
             
             // Kolom untuk tracking lokasi terakhir
-            $table->double('last_latitude', 10, 8)->nullable()->after('monthly_emissions_kg');
-            $table->double('last_longitude', 11, 8)->nullable()->after('last_latitude');
-            $table->float('last_speed_kmph')->nullable()->after('last_longitude');
+            $table->double('last_latitude', 10, 8)->nullable();
+            $table->double('last_longitude', 11, 8)->nullable();
+            $table->float('last_speed_kmph')->nullable();
             
             // Kolom untuk tracking status sensor
-            $table->timestamp('last_sensor_update')->nullable()->after('last_speed_kmph');
-            $table->enum('sensor_status', ['active', 'inactive', 'error'])->default('inactive')->after('last_sensor_update');
+            $table->timestamp('last_sensor_update')->nullable();
+            $table->enum('sensor_status', ['active', 'inactive', 'error'])->default('inactive');
             
             // Kolom untuk automatic carbon credit adjustment
-            $table->boolean('auto_adjustment_enabled')->default(true)->after('sensor_status');
-            $table->float('emission_threshold_kg')->default(100)->after('auto_adjustment_enabled'); // threshold untuk adjustment otomatis
+            $table->boolean('auto_adjustment_enabled')->default(true);
+            $table->float('emission_threshold_kg')->default(100); // threshold untuk adjustment otomatis
             
             $table->timestamps();
         });

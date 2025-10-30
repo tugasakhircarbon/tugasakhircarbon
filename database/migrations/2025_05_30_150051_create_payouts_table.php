@@ -24,8 +24,8 @@ return new class extends Migration
                 'completed',
                 'failed'
             ])->default('pending');
-            $table->timestamp('processed_at')->nullable()->after('status');
-            $table->text('notes')->nullable()->after('status');
+            $table->timestamp('processed_at')->nullable();
+            $table->text('notes')->nullable();
             // Tambahkan kolom lain yang diperlukan
             $table->timestamps();
 

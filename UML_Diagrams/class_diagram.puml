@@ -1,0 +1,262 @@
+@startuml Carbon_Credit_Class_Diagram
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam classFontSize 10
+skinparam classAttributeFontSize 9
+
+title Carbon Credit Trading Platform - Class Diagram
+
+package "Models" {
+    class User {
+        +id: bigint
+        +name: string
+        +email: string
+        +nomor_kartu_keluarga: string
+        +nik_e_ktp: string
+        +password: string
+        +role: enum(admin, user)
+        +phone_number: string
+        +address: string
+        +bank_account: string
+        +bank_name: string
+        +email_verified_at: timestamp
+        +remember_token: string
+        +created_at: timestamp
+        +updated_at: timestamp
+        --
+        +carbonCredits(): HasMany
+        +vehicles(): HasMany
+        +soldTransactions(): HasMany
+        +boughtTransactions(): HasMany
+        +payouts(): HasMany
+        +isAdmin(): boolean
+        +isUser(): boolean
+    }
+
+    class CarbonCredit {
+        +id: bigint
+        +owner_id: bigint
+        +nomor_kartu_keluarga: string
+        +pemilik_kendaraan: enum
+        +nik_e_ktp: string
+        +nrkb: string
+        +nomor_rangka_5digit: string(5)
+        +vehicle_type: string
+        +amount: decimal(15,2)
+        +price_per_unit: decimal(15,2)
+        +status: enum
+        +sale_price_per_unit: decimal(15,2)
+        +quantity_to_sell: decimal(10,2)
+        +sale_notes: text
+        +preferred_sale_date: date
+        +sale_requested_at: timestamp
+        +sale_approved_at: timestamp
+        +sale_rejected_at: timestamp
+        +sale_rejection_reason: text
+        +sale_rejected_by: bigint
+        +created_at: timestamp
+        +updated_at: timestamp
+        --
+        +owner(): BelongsTo
+        +transactionDetails(): HasMany
+        +getAvailableAmountAttribute(): decimal
+        +getTotalValueAttribute(): decimal
+    }
+
+    class Transaction {
+        +id: bigint
+        +seller_id: bigint
+        +buyer_id: bigint
+        +transaction_id: string
+        +type: string
+        +amount: decimal(15,2)
+        +price_per_unit: decimal(15,2)
+        +total_amount: decimal(15,2)
+        +status: enum(pending, success, failed, expired)
+        +paid_at: timestamp
+        +completed_at: timestamp
+        +payment_method: string
+        +midtrans_transaction_id: string
+        +midtrans_snap_token: string
+        +created_at: timestamp
+        +updated_at: timestamp
+        --
+        +seller(): BelongsTo
+        +buyer(): BelongsTo
+        +details(): HasMany
+        +payout(): HasOne
+    }
+
+    class TransactionDetail {
+        +id: bigint
+        +transaction_id: bigint
+        +carbon_credit_id: bigint
+        +amount: decimal(15,2)
+        +price: decimal(15,2)
+        +vehicle_id: bigint
+        +created_at: timestamp
+        +updated_at: timestamp
+        --
+        +transaction(): BelongsTo
+        +carbonCredit(): BelongsTo
+        +vehicle(): BelongsTo
+    }
+
+    class Payout {
+        +id: bigint
+        +transaction_id: bigint
+        +user_id: bigint
+        +payout_id: string
+        +amount: decimal(15,2)
+        +admin_fee: decimal(15,2)
+        +net_amount: decimal(10,2)
+        +status: enum
+        +processed_at: timestamp
+        +notes: text
+        +midtrans_payout_id: string
+        +midtrans_response: text
+        +created_at: timestamp
+        +updated_at: timestamp
+        --
+        +transaction(): BelongsTo
+        +user(): BelongsTo
+        +getStatusBadgeAttribute(): string
+        +getStatusLabelAttribute(): string
+        +canBeProcessed(): boolean
+        +canBeApproved(): boolean
+        +isFinal(): boolean
+    }
+}
+
+package "Controllers" {
+    class CarbonCreditController {
+        +index(): View
+        +vehicles(): View
+        +create(): View
+        +store(Request): RedirectResponse
+        +show(CarbonCredit): View
+        +edit(CarbonCredit): View
+        +update(Request, CarbonCredit): RedirectResponse
+        +approve(CarbonCredit): RedirectResponse
+        +reject(CarbonCredit): RedirectResponse
+        +setAvailable(CarbonCredit): RedirectResponse
+        +requestSale(CarbonCredit): View
+        +submitSaleRequest(Request, CarbonCredit): RedirectResponse
+        +approveSaleRequest(CarbonCredit): RedirectResponse
+    }
+
+    class TransactionController {
+        +index(): View
+        +show(Transaction): View
+        +create(CarbonCredit): View
+        +store(Request, CarbonCredit): RedirectResponse
+        +showPayment(Transaction): View
+        +handlePaymentNotification(Request): Response
+    }
+
+    class PayoutController {
+        +index(): View
+        +show(Payout): View
+        +create(Payout): RedirectResponse
+        +showApproveForm(Payout): View
+        +approve(Request, Payout): RedirectResponse
+        +process(Payout): RedirectResponse
+        +checkStatus(Payout): RedirectResponse
+        +adminIndex(): View
+        +handlePayoutNotification(Request): Response
+    }
+
+    class MarketplaceController {
+        +index(): View
+        +show(CarbonCredit): View
+        +adminIndex(): View
+    }
+
+    class DashboardController {
+        +index(): View
+        +post(): View
+    }
+}
+
+package "Services" {
+    class MidtransService {
+        -payoutApiUrl: string
+        -serverKey: string
+        -creatorKey: string
+        -approverKey: string
+        --
+        +createTransaction(string, int, string, string): string
+        +handleNotification(Request): Notification
+        +verifySignature(string, string, string, string): string
+        +createPayout(string, int, string, string, string): object
+        +approvePayout(string, string, string): object
+        +getPayoutDetails(string): object
+        +handlePayoutNotification(Request): object
+        +getSupportedBanks(): array
+        -mapBankCode(string): string
+        -verifyPayoutSignature(Request): boolean
+    }
+}
+
+package "Middleware" {
+    class RoleMiddleware {
+        +handle(Request, Closure, string): Response
+    }
+
+    class Admin {
+        +handle(Request, Closure): Response
+    }
+}
+
+' Relationships
+User ||--o{ CarbonCredit : owns
+User ||--o{ Transaction : sells
+User ||--o{ Transaction : buys
+User ||--o{ Payout : receives
+
+CarbonCredit ||--o{ TransactionDetail : included_in
+Transaction ||--o{ TransactionDetail : contains
+Transaction ||--|| Payout : generates
+
+TransactionDetail }o--|| CarbonCredit : references
+TransactionDetail }o--|| Transaction : belongs_to
+
+' Controller Dependencies
+CarbonCreditController ..> CarbonCredit : manages
+TransactionController ..> Transaction : manages
+TransactionController ..> CarbonCredit : uses
+PayoutController ..> Payout : manages
+MarketplaceController ..> CarbonCredit : displays
+
+' Service Dependencies
+TransactionController ..> MidtransService : uses
+PayoutController ..> MidtransService : uses
+
+note right of CarbonCredit::status
+  Status values:
+  - pending: Menunggu persetujuan admin
+  - approved: Disetujui admin
+  - pending_sale: Mengajukan penjualan
+  - available: Tersedia di marketplace
+  - rejected: Ditolak admin
+  - sold: Sudah terjual
+end note
+
+note right of Transaction::status
+  Status values:
+  - pending: Menunggu pembayaran
+  - success: Pembayaran berhasil
+  - failed: Pembayaran gagal
+  - expired: Pembayaran kedaluwarsa
+end note
+
+note right of Payout::status
+  Status values:
+  - pending: Menunggu
+  - created: Dibuat
+  - processing: Diproses
+  - completed: Selesai
+  - failed: Gagal
+end note
+
+@enduml

@@ -1,0 +1,128 @@
+@startuml Carbon_Credit_Activity_Diagram
+!theme plain
+
+title Carbon Credit Trading Platform - Activity Diagram
+
+|User|
+start
+:Register Account;
+:Login to System;
+:Register Vehicle;
+note right
+  User provides:
+  - Vehicle ownership details
+  - NRKB (Vehicle Registration)
+  - Vehicle type (car/motorcycle)
+  - 5-digit chassis number
+end note
+
+|Admin|
+:Review Vehicle Registration;
+if (Vehicle Valid?) then (yes)
+  :Approve Vehicle;
+  :Assign Carbon Credit Quota;
+  note right
+    Quota Assignment:
+    - Car: 800 kg CO2eq
+    - Motorcycle: 500 kg CO2eq
+  end note
+  
+  |User|
+  :Receive Approval Notification;
+  :View Carbon Credit Balance;
+  
+  if (Want to Sell Credits?) then (yes)
+    :Request Sale to Marketplace;
+    note right
+      User specifies:
+      - Quantity to sell
+      - Sale price per unit
+    end note
+    
+    |Admin|
+    :Review Sale Request;
+    if (Sale Request Valid?) then (yes)
+      :Approve Sale Request;
+      :Make Credits Available in Marketplace;
+      
+      |Buyer|
+      :Browse Marketplace;
+      :Select Carbon Credits;
+      :Create Purchase Transaction;
+      
+      |System|
+      :Generate Midtrans Payment;
+      :Send Payment Link to Buyer;
+      
+      |Buyer|
+      :Complete Payment via Midtrans;
+      
+      |Midtrans|
+      :Process Payment;
+      :Send Payment Notification;
+      
+      |System|
+      :Update Transaction Status;
+      if (Payment Successful?) then (yes)
+        :Transfer Carbon Credits to Buyer;
+        :Create Payout Record for Seller;
+        
+        |Seller|
+        :View Payout Available;
+        :Request Payout;
+        
+        |Admin|
+        :Review Payout Request;
+        :Process Payout via Midtrans;
+        
+        |Midtrans|
+        :Execute Bank Transfer;
+        :Send Payout Notification;
+        
+        |System|
+        :Update Payout Status;
+        :Notify Seller of Completion;
+        
+        |Seller|
+        :Receive Payment in Bank Account;
+        
+      else (failed)
+        :Cancel Transaction;
+        :Return Credits to Seller;
+      endif
+      
+    else (rejected)
+      :Reject Sale Request;
+      :Notify User of Rejection;
+    endif
+    
+  else (no)
+    :Keep Credits in Personal Account;
+  endif
+  
+else (rejected)
+  :Reject Vehicle Registration;
+  :Notify User of Rejection;
+  
+  |User|
+  :Receive Rejection Notification;
+  if (Want to Re-register?) then (yes)
+    :Update Vehicle Information;
+    :Resubmit Registration;
+  else (no)
+    stop
+  endif
+endif
+
+stop
+
+note bottom
+  Key Business Rules:
+  1. Only approved vehicles get carbon credit quotas
+  2. Users can only sell their own carbon credits
+  3. All transactions go through Midtrans payment gateway
+  4. Payouts are processed after successful transactions
+  5. Admin approval required for vehicle registration and sale requests
+end note
+
+@enduml

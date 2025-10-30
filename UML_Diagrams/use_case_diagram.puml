@@ -1,0 +1,162 @@
+@startuml Carbon_Credit_Use_Case_Diagram
+!theme plain
+skinparam actorStyle awesome
+
+title Carbon Credit Trading Platform - Use Case Diagram
+
+left to right direction
+
+actor "User" as User
+actor "Admin" as Admin
+actor "Midtrans" as Midtrans
+
+rectangle "Carbon Credit Trading System" {
+    
+    package "Authentication" {
+        usecase "Register Account" as UC1
+        usecase "Login" as UC2
+        usecase "Logout" as UC3
+        usecase "Update Profile" as UC4
+    }
+    
+    package "Vehicle & Carbon Credit Management" {
+        usecase "Register Vehicle" as UC5
+        usecase "View My Vehicles" as UC6
+        usecase "View My Carbon Credits" as UC7
+        usecase "Request Sale" as UC8
+        usecase "Approve Vehicle Registration" as UC9
+        usecase "Reject Vehicle Registration" as UC10
+        usecase "Approve Sale Request" as UC11
+        usecase "Reject Sale Request" as UC12
+        usecase "View All Vehicles" as UC13
+        usecase "View Pending Sales" as UC14
+    }
+    
+    package "Marketplace" {
+        usecase "Browse Available Credits" as UC15
+        usecase "View Credit Details" as UC16
+        usecase "Purchase Carbon Credits" as UC17
+        usecase "View Admin Marketplace" as UC18
+    }
+    
+    package "Transaction Management" {
+        usecase "View My Transactions" as UC19
+        usecase "View Transaction Details" as UC20
+        usecase "Make Payment" as UC21
+        usecase "Process Payment" as UC22
+        usecase "Send Payment Notification" as UC23
+    }
+    
+    package "Payout Management" {
+        usecase "View My Payouts" as UC24
+        usecase "Request Payout" as UC25
+        usecase "Approve Payout" as UC26
+        usecase "Process Payout" as UC27
+        usecase "View All Payouts" as UC28
+        usecase "Check Payout Status" as UC29
+        usecase "Send Payout Notification" as UC30
+    }
+    
+    package "Dashboard & Reports" {
+        usecase "View User Dashboard" as UC31
+        usecase "View Admin Dashboard" as UC32
+        usecase "Generate Reports" as UC33
+    }
+}
+
+' User relationships
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC15
+User --> UC16
+User --> UC17
+User --> UC19
+User --> UC20
+User --> UC21
+User --> UC24
+User --> UC25
+User --> UC26
+User --> UC31
+
+' Admin relationships
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+Admin --> UC14
+Admin --> UC15
+Admin --> UC16
+Admin --> UC18
+Admin --> UC19
+Admin --> UC20
+Admin --> UC27
+Admin --> UC28
+Admin --> UC29
+Admin --> UC32
+Admin --> UC33
+
+' Midtrans relationships
+Midtrans --> UC22
+Midtrans --> UC23
+Midtrans --> UC30
+
+' Include relationships
+UC17 .> UC21 : <<include>>
+UC21 .> UC22 : <<include>>
+UC22 .> UC23 : <<include>>
+
+UC25 .> UC27 : <<include>>
+UC27 .> UC30 : <<include>>
+
+UC5 .> UC9 : <<include>>
+UC8 .> UC11 : <<include>>
+
+' Extend relationships
+UC9 ..> UC10 : <<extend>>
+UC11 ..> UC12 : <<extend>>
+
+UC26 ..> UC29 : <<extend>>
+
+note right of UC5
+  User registers their vehicle
+  to get carbon credit quota
+end note
+
+note right of UC9
+  Admin approves vehicle and
+  assigns carbon credit quota
+  (800kg for car, 500kg for motorcycle)
+end note
+
+note right of UC8
+  User requests to sell their
+  carbon credits in marketplace
+end note
+
+note right of UC17
+  User purchases carbon credits
+  from marketplace using
+  Midtrans payment gateway
+end note
+
+note right of UC25
+  Seller requests payout
+  after successful transaction
+end note
+
+note right of UC27
+  Admin processes payout
+  through Midtrans payout API
+end note
+
+@enduml

@@ -1,0 +1,232 @@
+@startuml Carbon_Credit_ERD
+!theme plain
+skinparam linetype ortho
+
+title Carbon Credit Trading Platform - Entity Relationship Diagram
+
+entity "users" as users {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR(255)
+  * email : VARCHAR(255) <<UNIQUE>>
+  * nomor_kartu_keluarga : VARCHAR(255)
+  * nik_e_ktp : VARCHAR(255)
+  * password : VARCHAR(255)
+  * role : ENUM('admin', 'user')
+  * phone_number : VARCHAR(255)
+  * address : TEXT
+  * bank_account : VARCHAR(255)
+  * bank_name : VARCHAR(255)
+  email_verified_at : TIMESTAMP
+  remember_token : VARCHAR(100)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "carbon_credits" as carbon_credits {
+  * id : BIGINT <<PK>>
+  --
+  * owner_id : BIGINT <<FK>>
+  * nomor_kartu_keluarga : VARCHAR(255)
+  * pemilik_kendaraan : ENUM('milik sendiri', 'milik keluarga satu kk')
+  * nik_e_ktp : VARCHAR(255)
+  * nrkb : VARCHAR(255)
+  * nomor_rangka_5digit : VARCHAR(5)
+  vehicle_type : VARCHAR(255)
+  amount : DECIMAL(15,2)
+  * price_per_unit : DECIMAL(15,2)
+  * status : ENUM('pending', 'approved', 'pending_sale', 'available', 'rejected', 'sold')
+  sale_price_per_unit : DECIMAL(15,2)
+  quantity_to_sell : DECIMAL(10,2)
+  sale_notes : TEXT
+  preferred_sale_date : DATE
+  sale_requested_at : TIMESTAMP
+  sale_approved_at : TIMESTAMP
+  sale_rejected_at : TIMESTAMP
+  sale_rejection_reason : TEXT
+  sale_rejected_by : BIGINT <<FK>>
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "transactions" as transactions {
+  * id : BIGINT <<PK>>
+  --
+  * seller_id : BIGINT <<FK>>
+  * buyer_id : BIGINT <<FK>>
+  * transaction_id : VARCHAR(255) <<UNIQUE>>
+  * amount : DECIMAL(15,2)
+  * price_per_unit : DECIMAL(15,2)
+  * total_amount : DECIMAL(15,2)
+  * status : ENUM('pending', 'success', 'failed', 'expired')
+  paid_at : TIMESTAMP
+  payment_method : VARCHAR(255)
+  midtrans_transaction_id : VARCHAR(255)
+  midtrans_snap_token : VARCHAR(255)
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "transaction_details" as transaction_details {
+  * id : BIGINT <<PK>>
+  --
+  * transaction_id : BIGINT <<FK>>
+  * carbon_credit_id : BIGINT <<FK>>
+  * amount : DECIMAL(15,2)
+  * price : DECIMAL(15,2)
+  vehicle_id : BIGINT <<FK>>
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "payouts" as payouts {
+  * id : BIGINT <<PK>>
+  --
+  transaction_id : BIGINT <<FK>>
+  * user_id : BIGINT <<FK>>
+  * payout_id : VARCHAR(255)
+  midtrans_payout_id : VARCHAR(255)
+  midtrans_response : TEXT
+  * amount : DECIMAL(15,2)
+  admin_fee : DECIMAL(15,2)
+  * net_amount : DECIMAL(10,2)
+  * status : ENUM('pending', 'created', 'processing', 'completed', 'failed')
+  processed_at : TIMESTAMP
+  notes : TEXT
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "personal_access_tokens" as personal_access_tokens {
+  * id : BIGINT <<PK>>
+  --
+  * tokenable_type : VARCHAR(255)
+  * tokenable_id : BIGINT
+  * name : VARCHAR(255)
+  * token : VARCHAR(64) <<UNIQUE>>
+  abilities : TEXT
+  last_used_at : TIMESTAMP
+  expires_at : TIMESTAMP
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "cache" as cache {
+  * key : VARCHAR(255) <<PK>>
+  --
+  * value : MEDIUMTEXT
+  * expiration : INT
+}
+
+entity "cache_locks" as cache_locks {
+  * key : VARCHAR(255) <<PK>>
+  --
+  * owner : VARCHAR(255)
+  * expiration : INT
+}
+
+entity "jobs" as jobs {
+  * id : BIGINT <<PK>>
+  --
+  * queue : VARCHAR(255)
+  * payload : LONGTEXT
+  * attempts : TINYINT
+  * reserved_at : INT
+  available_at : INT
+  * created_at : INT
+}
+
+entity "job_batches" as job_batches {
+  * id : VARCHAR(255) <<PK>>
+  --
+  * name : VARCHAR(255)
+  * total_jobs : INT
+  * pending_jobs : INT
+  * failed_jobs : INT
+  * failed_job_ids : LONGTEXT
+  options : MEDIUMTEXT
+  cancelled_at : INT
+  * created_at : INT
+  finished_at : INT
+}
+
+entity "failed_jobs" as failed_jobs {
+  * id : BIGINT <<PK>>
+  --
+  * uuid : VARCHAR(255) <<UNIQUE>>
+  * connection : TEXT
+  * queue : TEXT
+  * payload : LONGTEXT
+  * exception : LONGTEXT
+  * failed_at : TIMESTAMP
+}
+
+entity "sessions" as sessions {
+  * id : VARCHAR(255) <<PK>>
+  --
+  user_id : BIGINT
+  ip_address : VARCHAR(45)
+  user_agent : TEXT
+  * payload : LONGTEXT
+  * last_activity : INT
+}
+
+' Primary Relationships
+users ||--o{ carbon_credits : "owns (owner_id)"
+users ||--o{ transactions : "sells (seller_id)"
+users ||--o{ transactions : "buys (buyer_id)"
+users ||--o{ payouts : "receives (user_id)"
+users ||--o{ carbon_credits : "rejects (sale_rejected_by)"
+
+carbon_credits ||--o{ transaction_details : "included_in (carbon_credit_id)"
+carbon_credits ||--o{ transaction_details : "vehicle_reference (vehicle_id)"
+
+transactions ||--o{ transaction_details : "contains (transaction_id)"
+transactions ||--|| payouts : "generates (transaction_id)"
+
+' Index relationships
+sessions }o--|| users : "user_id (nullable)"
+personal_access_tokens }o--|| users : "tokenable_id (polymorphic)"
+
+note right of carbon_credits::status
+  Status Flow:
+  pending → approved → pending_sale → available → sold
+  pending → rejected
+end note
+
+note right of transactions::status
+  Payment Status:
+  pending → success (paid)
+  pending → failed/expired
+end note
+
+note right of payouts::status
+  Payout Flow:
+  pending → created → processing → completed
+  Any status → failed
+end note
+
+note bottom of carbon_credits
+  Business Rules:
+  - Car vehicles get 800 kg CO2eq quota
+  - Motorcycle vehicles get 500 kg CO2eq quota
+  - Only approved credits can request sale
+  - Only available credits can be purchased
+end note
+
+note bottom of transactions
+  Payment Integration:
+  - Uses Midtrans payment gateway
+  - Supports multiple payment methods
+  - Automatic status updates via webhook
+end note
+
+note bottom of payouts
+  Payout Integration:
+  - Uses Midtrans payout API
+  - Automatic bank transfer
+  - Admin fee deduction
+  - Status tracking via webhook
+end note
+
+@enduml
